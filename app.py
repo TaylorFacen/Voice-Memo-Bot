@@ -118,24 +118,89 @@ def process_memo():
 @app.route('/list_memos', methods = ['POST'])
 def list_memos():
     # Get data from request
+    data = request.form.to_dict()
+    api_url = request.host_url
 
     # Collect user phone number and limit from memory
+    memory = json.loads(data['Memory'])
+    user_number = memory['twilio']['sms']['From']
+    responses = memory['twilio']['collected_data']['query']['answers']
+    limit = responses['limit']['answer']
 
     # Fetch memos from user's sync list
+    sync_list = sync.sync_lists.get(user_number).fetch()
+    sync_list_items = sync_list.sync_list_items.list(limit = int(limit), order = "desc")
 
     # Return list of memos (metadata only)
-    return {}, 200
+    memos = [{
+        "id": memo.index,
+        "title": memo.data['title'],
+        "tag": memo.data['tag'],
+        "created_on": memo.data['created_on']
+    } for memo in sync_list_items]
+
+    memos_sorted = sorted(memos, key = lambda memo: memo['id'])
+
+    memos_message = '\n\n'.join([ "{}) {} - {} - {}".format(memo['id'], memo['title'], memo['tag'], memo['created_on']) for memo in memos_sorted])
+
+    actions = {
+        "actions": [
+            {
+                "say": memos_message
+            }, {
+                "collect": {
+                    "name": "memo_selection",
+                    "questions": [
+                        {
+                            "question": "Which memo would you like to see?",
+                            "name": "memo_id",
+                            "type": "Twilio.NUMBER"
+                        }
+                    ],
+                    "on_complete": {
+                        "redirect": "{}fetch_memo".format(api_url)
+                    }
+                }
+            }
+        ]
+    }
+
+    return actions
 
 @app.route('/fetch_memo', methods = ['POST'])
 def fetch_memo():
     # Get data from request
+    data = request.form.to_dict()
 
     # Collect user phone number and memo id from memory
+    memory = json.loads(data['Memory'])
+    user_number = memory['twilio']['sms']['From']
+    responses = memory['twilio']['collected_data']['memo_selection']['answers']
+    memo_id = responses['memo_id']['answer']
 
     # Fetch memo from user's sync list
+    sync_list = sync.sync_lists.get(user_number).fetch()
+    sync_list_item = sync_list.sync_list_items(memo_id).fetch()
+    memo = sync_list_item.data
 
     # Return memo
-    return {}, 200
+    memo_message = "%(title)s\nTag: %(tag)s\nCreated on: %(created_on)s\nRecording link: %(recording_url)s\n\n%(transcription)s" % {
+        "title": memo['title'],
+        "tag": memo['tag'],
+        "created_on": memo['created_on'],
+        "recording_url": memo['recording_url'],
+        "transcription": memo['transcription']
+    }
+
+    actions = {
+        "actions": [
+            {
+                "say": memo_message
+            }
+        ]
+    }
+
+    return actions
 
 if __name__ == "__main__":
     app.run(debug = True)
