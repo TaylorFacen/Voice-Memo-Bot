@@ -1,6 +1,7 @@
 import json
 
 from flask import Flask, request
+from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 
 from config import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_SYNC_SID
@@ -8,6 +9,7 @@ from config import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_SYNC_SID
 app = Flask(__name__)
 
 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+sync = client.sync.services(TWILIO_SYNC_SID)
 
 @app.route('/start_memo', methods = ['POST'])
 def start_memo():
@@ -38,14 +40,29 @@ def start_memo():
         from_ = twilio_number
     )
 
-    print(call.sid)
-
     # Create a sync list for the phone numebr if it doesn't already have one
+    try:
+        sync_list = sync.sync_lists.get(user_number).fetch()
+    except TwilioRestException:
+        sync_list = sync.sync_lists.create(unique_name = user_number)
+
 
     # Save the memo to the user's sync list
+    data = {
+        "title": memo_title,
+        "tag": memo_tag,
+        "call_sid": call.sid,
+        "created_on": datetime.now().strftime("%b %d - %-I:%M %p")
+    }
+
+    document = sync_list.sync_list_items.create(data = data)
 
     # Return an empty action to end the autopilot conversation
-    return {}, 200
+    actions = {
+        "actions": []
+    }
+
+    return actions
 
 
 @app.route('/process_memo', methods = ['POST'])
