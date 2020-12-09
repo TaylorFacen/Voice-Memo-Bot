@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 
 from flask import Flask, request
@@ -68,14 +69,49 @@ def start_memo():
 @app.route('/process_memo', methods = ['POST'])
 def process_memo():
     # Get data from request
+    data = request.form.to_dict()
 
     # Collect recording info from data
+    twilio_number = data['From']
+    user_number = data['To']
+    recording_url = data['RecordingUrl']
+    if data['TranscriptionStatus'] == "failed":
+        transcription = "There was an error transcribing this memo."
+    else:
+        transcription = data['TranscriptionText']
+
+    call_sid = data['CallSid']
 
     # Fetch user's sync list
+    sync_list = sync.sync_lists.get(user_number).fetch()
+    sync_list_items = sync_list.sync_list_items.list(limit = 5, order = "desc")
+    sync_list_item = list(filter(lambda item: item.data.get('call_sid') == call_sid, sync_list_items))[0]
 
     # Add memo to document
+    new_data = {
+        **sync_list_item.data,
+        'recording_url': recording_url,
+        'transcription': transcription
+    }
+
+    sync_list_item.update(data = new_data)
 
     # Send user the memo
+    memo_title = new_data['title']
+    memo_tag = new_data['tag']
+    created_on = new_data['created_on']
+
+    client.messages.create(
+        body = "%(title)s\nTag: %(tag)s\nCreated on: %(created_on)s\nRecording link: %(recording_url)s\n\n%(transcription)s" % {
+            "title": memo_title,
+            "tag": memo_tag,
+            "created_on": created_on,
+            "recording_url": recording_url,
+            "transcription": transcription
+        }, 
+        from_ = twilio_number,
+        to= user_number
+    )
 
     return {}, 200 
 
