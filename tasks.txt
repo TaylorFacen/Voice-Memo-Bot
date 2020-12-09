@@ -1,0 +1,56 @@
+// Get Memo Data
+
+{
+	"actions": [
+		{
+			"collect": {
+				"name": "get_memo_data",
+				"questions": [
+					{
+						"question": "What do you want to title your memo?",
+						"name": "memo_title"
+					},
+					{
+						"question": "What tag do you want to add?",
+						"name": "memo_tag"
+					}
+				],
+				"on_complete": {
+					"redirect": {
+						"method": "POST",
+						"uri": "<ENTER_API_URL_HERE>/start_memo"
+					}
+				}
+			}
+		},
+		{
+			"say": "Great! Calling now."
+		}
+	]
+}
+
+// List Memos
+
+{
+	"actions": [
+		{
+			"collect": {
+				"name": "query",
+				"questions": [
+					{
+						"question": "How many memos would you like to look through?",
+						"prefill": "limit",
+						"name": "limit",
+						"type": "Twilio.Number"
+					}
+				],
+				"on_complete": {
+					"redirect": {
+						"method": "POST",
+						"uri": "<ENTER_API_URL_HERE>/list_memos"
+					}
+				}
+			}
+		}
+	]
+}

@@ -1,0 +1,171 @@
+{
+    "friendlyName" : "",
+    "logQueries" : true,
+    "uniqueName" : "voice-memo",
+    "defaults" : {
+        "defaults" : {
+            "assistant_initiation" : "task://get_memo_data",
+            "fallback" : "task://get_memo_data",
+            "collect" : {
+                "validate_on_failure" : "task://get_memo_data"
+            }
+        }
+    },
+    "styleSheet" : {
+        "style_sheet" : {
+            "collect" : {
+                "validate" : {
+                    "on_failure" : {
+                        "repeat_question" : false,
+                        "messages" : [
+                            {
+                                "say" : {
+                                    "speech" : "I didn't get that. What did you say?"
+                                }
+                            },
+                            {
+                                "say" : {
+                                    "speech" : "I still didn't catch that. Please repeat."
+                                }
+                            },
+                            {
+                                "say" : {
+                                    "speech" : "Let's try one last time. Say it again please."
+                                }
+                            }
+                        ]
+                    },
+                    "on_success" : { "say" : { "speech" : "" } },
+                    "max_attempts" : 4
+                }
+            },
+            "voice" : {
+                "say_voice" : "Polly.Matthew"
+            },
+            "name" : ""
+        }
+    },
+    "fieldTypes" : [],
+    "tasks" : [
+        {
+            "uniqueName" : "list_memos",
+            "actions" : {
+                "actions" : [
+                    {
+                        "collect" : {
+                            "on_complete" : {
+                                "redirect" : {
+                                    "method" : "POST",
+                                    "uri" : "<ENTER_API_URL_HERE>/list_memos"
+                                }
+                            },
+                            "name" : "query",
+                            "questions" : [
+                                {
+                                    "type" : "Twilio.Number",
+                                    "prefill" : "limit",
+                                    "question" : "How many memos would you like to look through?",
+                                    "name" : "limit"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "fields" : [
+                {
+                    "uniqueName" : "limit",
+                    "fieldType" : "Twilio.NUMBER"
+                }
+            ],
+            "samples" : [
+                {
+                    "language" : "en-US",
+                    "taggedText" : "List {limit} memo"
+                },
+                {
+                    "language" : "en-US",
+                    "taggedText" : "List {limit} memos"
+                },
+                {
+                    "language" : "en-US",
+                    "taggedText" : "What are my last {limit} memos?"
+                },
+                {
+                    "language" : "en-US",
+                    "taggedText" : "List my last {limit} memos"
+                },
+                {
+                    "language" : "en-US",
+                    "taggedText" : "All memos"
+                },
+                {
+                    "language" : "en-US",
+                    "taggedText" : "What memos do I have?"
+                },
+                {
+                    "language" : "en-US",
+                    "taggedText" : "List memos"
+                }
+            ]
+        },
+        {
+            "uniqueName" : "get_memo_data",
+            "actions" : {
+                "actions" : [
+                    {
+                        "collect" : {
+                            "on_complete" : {
+                                "redirect" : {
+                                    "method" : "POST",
+                                    "uri" : "<ENTER_API_URL_HERE>/start_memo"
+                                }
+                            },
+                            "name" : "get_memo_data",
+                            "questions" : [
+                                {
+                                    "question" : "What do you want to title your memo?",
+                                    "name" : "memo_title"
+                                },
+                                {
+                                    "question" : "What tag do you want to add?",
+                                    "name" : "memo_tag"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "say" : "Great! Calling now."
+                    }
+                ]
+            },
+            "fields" : [],
+            "samples" : [
+                {
+                    "language" : "en-US",
+                    "taggedText" : "Voice memo"
+                },
+                {
+                    "language" : "en-US",
+                    "taggedText" : "Record memo"
+                },
+                {
+                    "language" : "en-US",
+                    "taggedText" : "Record"
+                },
+                {
+                    "language" : "en-US",
+                    "taggedText" : "I want to record a memo"
+                },
+                {
+                    "language" : "en-US",
+                    "taggedText" : "start memo"
+                },
+                {
+                    "language" : "en-US",
+                    "taggedText" : "memo"
+                }
+            ]
+        }
+    ]
+}
